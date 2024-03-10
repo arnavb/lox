@@ -1,9 +1,13 @@
-use std::{env, process::ExitCode};
+use std::{
+    env, fs,
+    io::{self, Write},
+    process::ExitCode,
+};
 
 fn main() -> ExitCode {
     match env::args().len() {
         1 => run_prompt(),
-        2 => run_file(env::args().nth(1).unwrap()),
+        2 => run_file(env::args().nth(1).unwrap().as_str()),
         _ => {
             eprintln!("Usage: rlox [script]");
             ExitCode::from(64)
@@ -11,12 +15,43 @@ fn main() -> ExitCode {
     }
 }
 
-fn run_file(filename: String) -> ExitCode {
+/// Run an rlox script located in `filename`
+fn run_file(filename: &str) -> ExitCode {
     println!("Running {}", filename);
+    let file_contents = match fs::read_to_string(filename) {
+        Ok(contents) => contents,
+        Err(_) => return ExitCode::FAILURE,
+    };
+
+    println!("{}", file_contents);
+
     ExitCode::SUCCESS
 }
 
+/// Run rlox in interactive mode
 fn run_prompt() -> ExitCode {
-    println!("Running interpreter");
+    println!("rlox v0.0.1");
+    loop {
+        print!("> ");
+
+        if let Err(_) = io::stdout().flush() {
+            eprint!("IO Error: Unable to flush stdout");
+            return ExitCode::FAILURE;
+        }
+
+        let mut raw_input = String::new();
+
+        if let Err(_) = io::stdin().read_line(&mut raw_input) {
+            eprintln!("Unable to read input!");
+            continue;
+        }
+
+        let trimmed_input = raw_input.trim_end();
+
+        if trimmed_input.is_empty() {
+            break;
+        }
+    }
+
     ExitCode::SUCCESS
 }
