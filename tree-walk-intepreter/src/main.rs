@@ -4,6 +4,8 @@ use std::{
     process::ExitCode,
 };
 
+mod errors;
+
 fn main() -> ExitCode {
     match env::args().len() {
         1 => run_prompt(),
