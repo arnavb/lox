@@ -5,6 +5,7 @@ use std::{
 };
 
 mod errors;
+mod token;
 
 fn main() -> ExitCode {
     match env::args().len() {
