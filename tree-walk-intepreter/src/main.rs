@@ -57,3 +57,20 @@ fn run_prompt() -> ExitCode {
 
     ExitCode::SUCCESS
 }
+
+fn error(line: u32, message: &str) {
+    report(errors::Error {
+        line,
+        position_in_string: "".to_owned(),
+        message: message.to_owned(),
+    });
+}
+
+fn report(error: errors::Error) {
+    let errors::Error {
+        line,
+        position_in_string,
+        message,
+    } = error;
+    eprintln!("[line {}] Error {}: {}", line, position_in_string, message);
+}
