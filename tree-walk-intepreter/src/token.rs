@@ -43,12 +43,7 @@ pub enum TokenType {
     Eof,
 }
 
-impl Display for TokenType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
+#[derive(Debug)]
 pub enum Literal {
     Number(i32),
     String(String),
@@ -63,18 +58,10 @@ impl Display for Literal {
     }
 }
 
-pub struct Token {
+#[derive(Debug)]
+pub struct Token<'a> {
     pub token_type: TokenType,
-    pub lexeme: String,
+    pub lexeme: &'a [u8],
     pub literal: Option<Literal>,
-    pub line: u32,
-}
-
-impl Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.literal {
-            None => write!(f, "{} {}", self.token_type, self.lexeme),
-            Some(literal) => write!(f, "{} {} {}", self.token_type, self.lexeme, literal),
-        }
-    }
+    pub line: usize,
 }

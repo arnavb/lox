@@ -5,6 +5,7 @@ use std::{
 };
 
 mod errors;
+mod scanner;
 mod token;
 
 fn main() -> ExitCode {
@@ -35,6 +36,13 @@ fn run_file(filename: &str) -> ExitCode {
 fn run_prompt() -> ExitCode {
     println!("rlox v0.0.1");
     loop {
+        let test_token = token::Token {
+            token_type: token::TokenType::Identifier,
+            lexeme: b"abceefg",
+            literal: None,
+            line: 54,
+        };
+        println!("{:?}", test_token);
         print!("> ");
 
         if let Err(_) = io::stdout().flush() {
