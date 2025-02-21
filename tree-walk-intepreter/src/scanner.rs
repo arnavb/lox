@@ -19,34 +19,35 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub fn scan_tokens(&'a mut self) {
+    pub fn scan_tokens(&mut self) {
         while !self.is_at_end() {
-            //self.start = self.current;
+            self.start = self.current;
 
-            let next_character = self.advance();
-            self.tokens.push(self.character_to_token(next_character));
+            self.scan_to_token();
         }
 
-        //self.tokens.push(Token {
-        //    token_type: TokenType::Eof,
-        //    lexeme: b"",
-        //    literal: None,
-        //    line: self.line,
-        //})
+        self.tokens.push(Token {
+            token_type: TokenType::Eof,
+            lexeme: b"",
+            literal: None,
+            line: self.line,
+        })
     }
 
-    fn character_to_token(&'a self, next_character: char) -> Token<'a> {
+    fn scan_to_token(&mut self) -> Token {
+        let next_character = self.advance();
+
         match next_character {
-            '(' => self.create_token_object(TokenType::LeftParen, None),
-            ')' => self.create_token_object(TokenType::RightParen, None),
-            '{' => self.create_token_object(TokenType::LeftBrace, None),
-            '}' => self.create_token_object(TokenType::RightBrace, None),
-            ',' => self.create_token_object(TokenType::Comma, None),
-            '.' => self.create_token_object(TokenType::Dot, None),
-            '-' => self.create_token_object(TokenType::Minus, None),
-            '+' => self.create_token_object(TokenType::Plus, None),
-            ';' => self.create_token_object(TokenType::Semicolon, None),
-            '*' => self.create_token_object(TokenType::Star, None),
+            b'(' => self.create_token_object(TokenType::LeftParen, None),
+            b')' => self.create_token_object(TokenType::RightParen, None),
+            b'{' => self.create_token_object(TokenType::LeftBrace, None),
+            b'}' => self.create_token_object(TokenType::RightBrace, None),
+            b',' => self.create_token_object(TokenType::Comma, None),
+            b'.' => self.create_token_object(TokenType::Dot, None),
+            b'-' => self.create_token_object(TokenType::Minus, None),
+            b'+' => self.create_token_object(TokenType::Plus, None),
+            b';' => self.create_token_object(TokenType::Semicolon, None),
+            b'*' => self.create_token_object(TokenType::Star, None),
             _ => panic!("Not handled for now"),
         }
     }
@@ -55,11 +56,18 @@ impl<'a> Scanner<'a> {
         self.current >= self.source.len()
     }
 
-    fn advance(&mut self) -> char {
-        todo!()
+    fn advance(&mut self) -> u8 {
+        let result = *self
+            .source
+            .get(self.current)
+            .expect("out of range scanner index (this should never happen)");
+
+        self.current += 1;
+
+        result
     }
 
-    fn create_token_object(&'a self, token_type: TokenType, literal: Option<Literal>) -> Token<'a> {
+    fn create_token_object(&self, token_type: TokenType, literal: Option<Literal>) -> Token {
         let text = &self.source[self.start..self.current];
 
         Token {
