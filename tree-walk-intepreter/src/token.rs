@@ -59,9 +59,9 @@ impl Display for Literal {
 }
 
 #[derive(Debug)]
-pub struct Token<'a> {
+pub struct Token<'source> {
     pub token_type: TokenType,
-    pub lexeme: &'a [u8],
+    pub lexeme: &'source [u8],
     pub literal: Option<Literal>,
     pub line: usize,
 }

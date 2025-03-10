@@ -1,17 +1,17 @@
 use crate::token::{Literal, Token, TokenType};
 
-pub struct Scanner<'a> {
-    source: Vec<u8>,
-    tokens: Vec<Token<'a>>,
+pub struct Scanner<'source> {
+    source: &'source [u8],
+    tokens: Vec<Token<'source>>,
     start: usize,
     current: usize,
     line: usize,
 }
 
-impl<'a> Scanner<'a> {
-    pub fn new(source: &str) -> Self {
+impl<'source> Scanner<'source> {
+    pub fn new(source: &'source str) -> Self {
         Self {
-            source: source.as_bytes().to_owned(),
+            source: source.as_bytes(),
             tokens: Vec::new(),
             start: 0,
             current: 0,
@@ -19,11 +19,12 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub fn scan_tokens(&mut self) {
+    pub fn scan_tokens(&'source mut self) {
         while !self.is_at_end() {
             self.start = self.current;
 
-            self.scan_to_token();
+            let next_token = self.scan_to_token();
+            self.tokens.push(next_token);
         }
 
         self.tokens.push(Token {
@@ -34,7 +35,7 @@ impl<'a> Scanner<'a> {
         })
     }
 
-    fn scan_to_token(&mut self) -> Token {
+    fn scan_to_token(&mut self) -> Token<'source> {
         let next_character = self.advance();
 
         match next_character {
@@ -67,7 +68,11 @@ impl<'a> Scanner<'a> {
         result
     }
 
-    fn create_token_object(&self, token_type: TokenType, literal: Option<Literal>) -> Token {
+    fn create_token_object(
+        &self,
+        token_type: TokenType,
+        literal: Option<Literal>,
+    ) -> Token<'source> {
         let text = &self.source[self.start..self.current];
 
         Token {
