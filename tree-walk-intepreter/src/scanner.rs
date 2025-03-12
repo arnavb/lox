@@ -47,7 +47,7 @@ impl<'source> Scanner<'source> {
         }
     }
 
-    pub fn scan_tokens(&'source mut self) -> Vec<ScanError> {
+    pub fn scan_tokens(&mut self) -> Vec<ScanError> {
         let mut scan_errors = Vec::new();
 
         while !self.is_at_end() {
