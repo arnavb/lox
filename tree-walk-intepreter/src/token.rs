@@ -1,4 +1,7 @@
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    str::from_utf8,
+};
 
 #[derive(Debug)]
 pub enum TokenType {
@@ -47,16 +50,20 @@ pub enum TokenType {
 }
 
 #[derive(Debug)]
-pub enum Literal {
-    Number(i32),
-    String(String),
+pub enum Literal<'source> {
+    Number(f64),
+    String(&'source [u8]),
 }
 
-impl Display for Literal {
+impl Display for Literal<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Number(num) => write!(f, "{}", num),
-            Self::String(string) => write!(f, "{}", string),
+            Self::String(string) => write!(
+                f,
+                "{}",
+                from_utf8(string).expect("Invalid UTF-8 when formatting literal")
+            ),
         }
     }
 }
@@ -65,6 +72,6 @@ impl Display for Literal {
 pub struct Token<'source> {
     pub token_type: TokenType,
     pub lexeme: &'source [u8],
-    pub literal: Option<Literal>,
+    pub literal: Option<Literal<'source>>,
     pub line: usize,
 }

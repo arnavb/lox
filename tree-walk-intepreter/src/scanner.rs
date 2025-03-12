@@ -1,7 +1,10 @@
+use std::str::from_utf8;
+
 use crate::token::{Literal, Token, TokenType};
 
 pub enum ScanError {
     UnexpectedCharacter(u8),
+    UnterminatedString,
 }
 
 pub struct Scanner<'source> {
@@ -105,6 +108,13 @@ impl<'source> Scanner<'source> {
                 self.line += 1;
                 Ok(())
             }
+
+            // Strings
+            b'"' => self.string(),
+
+            // Numbers
+            n if n >= b'0' && n <= b'9' => self.number(),
+
             e => Err(ScanError::UnexpectedCharacter(e)),
         }
     }
@@ -134,6 +144,14 @@ impl<'source> Scanner<'source> {
             None
         } else {
             Some(self.source[self.current])
+        }
+    }
+
+    fn peek_next(&self) -> Option<u8> {
+        if self.current + 1 >= self.source.len() {
+            None
+        } else {
+            Some(self.source[self.current + 1])
         }
     }
 
@@ -169,7 +187,7 @@ impl<'source> Scanner<'source> {
     fn create_token_object(
         &self,
         token_type: TokenType,
-        literal: Option<Literal>,
+        literal: Option<Literal<'source>>,
     ) -> Token<'source> {
         let text = &self.source[self.start..self.current];
 
@@ -178,6 +196,61 @@ impl<'source> Scanner<'source> {
             lexeme: text,
             literal,
             line: self.line,
+        }
+    }
+
+    fn string(&mut self) -> Result<(), ScanError> {
+        while self.peek() != Some(b'"') && !self.is_at_end() {
+            if self.peek() == Some(b'\n') {
+                self.line += 1;
+            }
+
+            self.advance();
+        }
+
+        if self.is_at_end() {
+            Err(ScanError::UnterminatedString)
+        } else {
+            // Closing quote
+            self.advance();
+
+            let value = &self.source[self.start + 1..self.current - 1];
+
+            let next_token =
+                self.create_token_object(TokenType::String, Some(Literal::String(value)));
+
+            Ok(self.tokens.push(next_token))
+        }
+    }
+
+    fn number(&mut self) -> Result<(), ScanError> {
+        self.consume_digits();
+
+        if self.peek() == Some(b'.') {
+            if let Some(ch) = self.peek_next() {
+                if ch >= b'0' && ch <= b'9' {
+                    self.consume_digits();
+                }
+            }
+        }
+
+        let value = &self.source[self.start + 1..self.current - 1];
+
+        // Ugly but we're fairly certain these bytes represent a valid number
+        let parsed_f64 = from_utf8(value).unwrap().parse::<f64>().unwrap();
+
+        let next_token =
+            self.create_token_object(TokenType::Number, Some(Literal::Number(parsed_f64)));
+        Ok(self.tokens.push(next_token))
+    }
+
+    fn consume_digits(&mut self) {
+        while let Some(ch) = self.peek() {
+            if !(ch >= b'0' && ch <= b'9') {
+                break;
+            }
+
+            self.advance();
         }
     }
 }
