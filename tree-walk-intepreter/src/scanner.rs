@@ -113,7 +113,7 @@ impl<'source> Scanner<'source> {
             b'"' => self.string(),
 
             // Numbers
-            n if n >= b'0' && n <= b'9' => self.number(),
+            b'0'..=b'9' => self.number(),
 
             e => Err(ScanError::UnexpectedCharacter(e)),
         }
