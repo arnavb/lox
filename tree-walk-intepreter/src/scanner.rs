@@ -1,5 +1,9 @@
 use crate::token::{Literal, Token, TokenType};
 
+pub enum ScanError {
+    UnexpectedCharacter(u8),
+}
+
 pub struct Scanner<'source> {
     source: &'source [u8],
     tokens: Vec<Token<'source>>,
@@ -19,12 +23,15 @@ impl<'source> Scanner<'source> {
         }
     }
 
-    pub fn scan_tokens(&'source mut self) {
+    pub fn scan_tokens(&'source mut self) -> Vec<ScanError> {
+        let mut scan_errors = Vec::new();
+
         while !self.is_at_end() {
             self.start = self.current;
 
-            let next_token = self.scan_to_token();
-            self.tokens.push(next_token);
+            if let Err(e) = self.scan_next_token() {
+                scan_errors.push(e);
+            }
         }
 
         self.tokens.push(Token {
@@ -32,24 +39,101 @@ impl<'source> Scanner<'source> {
             lexeme: b"",
             literal: None,
             line: self.line,
-        })
+        });
+
+        scan_errors
     }
 
-    fn scan_to_token(&mut self) -> Token<'source> {
+    fn scan_next_token(&mut self) -> Result<(), ScanError> {
         let next_character = self.advance();
 
         match next_character {
-            b'(' => self.create_token_object(TokenType::LeftParen, None),
-            b')' => self.create_token_object(TokenType::RightParen, None),
-            b'{' => self.create_token_object(TokenType::LeftBrace, None),
-            b'}' => self.create_token_object(TokenType::RightBrace, None),
-            b',' => self.create_token_object(TokenType::Comma, None),
-            b'.' => self.create_token_object(TokenType::Dot, None),
-            b'-' => self.create_token_object(TokenType::Minus, None),
-            b'+' => self.create_token_object(TokenType::Plus, None),
-            b';' => self.create_token_object(TokenType::Semicolon, None),
-            b'*' => self.create_token_object(TokenType::Star, None),
-            _ => panic!("Not handled for now"),
+            b'(' => Ok(self.push_single_character_token_object(TokenType::LeftParen)),
+            b')' => Ok(self.push_single_character_token_object(TokenType::RightParen)),
+            b'{' => Ok(self.push_single_character_token_object(TokenType::LeftBrace)),
+            b'}' => Ok(self.push_single_character_token_object(TokenType::RightBrace)),
+            b',' => Ok(self.push_single_character_token_object(TokenType::Comma)),
+            b'.' => Ok(self.push_single_character_token_object(TokenType::Dot)),
+            b'-' => Ok(self.push_single_character_token_object(TokenType::Minus)),
+            b'+' => Ok(self.push_single_character_token_object(TokenType::Plus)),
+            b';' => Ok(self.push_single_character_token_object(TokenType::Semicolon)),
+            b'*' => Ok(self.push_single_character_token_object(TokenType::Star)),
+
+            // Two character lexeme
+            b'!' => Ok(self.push_two_character_token_object(
+                b'=',
+                TokenType::BangEqual,
+                TokenType::Bang,
+            )),
+            b'=' => Ok(self.push_two_character_token_object(
+                b'=',
+                TokenType::EqualEqual,
+                TokenType::Equal,
+            )),
+            b'>' => Ok(self.push_two_character_token_object(
+                b'=',
+                TokenType::LessEqual,
+                TokenType::Less,
+            )),
+            b'<' => Ok(self.push_two_character_token_object(
+                b'=',
+                TokenType::GreaterEqual,
+                TokenType::Greater,
+            )),
+
+            // Comments or division
+            b'/' => {
+                if self.match_next(b'/') {
+                    while let Some(ch) = self.peek() {
+                        if self.is_at_end() || ch == b'\n' {
+                            break;
+                        }
+                        self.advance();
+                    }
+
+                    // TODO: Actually store the comment
+                    Ok(self.push_single_character_token_object(TokenType::SingleLineComment))
+                } else {
+                    Ok(self.push_single_character_token_object(TokenType::Slash))
+                }
+            }
+
+            // Ignored whitespace
+            b' ' | b'\r' | b'\t' => Ok(()),
+
+            b'\n' => {
+                self.line += 1;
+                Ok(())
+            }
+            e => Err(ScanError::UnexpectedCharacter(e)),
+        }
+    }
+
+    fn push_single_character_token_object(&mut self, next_token_type: TokenType) {
+        let next_token = self.create_token_object(next_token_type, None);
+        self.tokens.push(next_token)
+    }
+
+    fn push_two_character_token_object(
+        &mut self,
+        expected: u8,
+        double: TokenType,
+        single: TokenType,
+    ) {
+        let next_token_type = if self.match_next(expected) {
+            double
+        } else {
+            single
+        };
+        let next_token = self.create_token_object(next_token_type, None);
+        self.tokens.push(next_token)
+    }
+
+    fn peek(&self) -> Option<u8> {
+        if self.is_at_end() {
+            None
+        } else {
+            Some(self.source[self.current])
         }
     }
 
@@ -66,6 +150,20 @@ impl<'source> Scanner<'source> {
         self.current += 1;
 
         result
+    }
+
+    fn match_next(&mut self, expected: u8) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+
+        if self.source[self.current] != expected {
+            return false;
+        }
+
+        self.current += 1;
+
+        true
     }
 
     fn create_token_object(
