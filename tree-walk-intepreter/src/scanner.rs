@@ -1,4 +1,4 @@
-use std::str::from_utf8;
+use std::{collections::HashMap, str::from_utf8};
 
 use crate::token::{Literal, Token, TokenType};
 
@@ -13,6 +13,8 @@ pub struct Scanner<'source> {
     start: usize,
     current: usize,
     line: usize,
+
+    reserved_keywords: HashMap<&'static str, TokenType>,
 }
 
 impl<'source> Scanner<'source> {
@@ -23,6 +25,25 @@ impl<'source> Scanner<'source> {
             start: 0,
             current: 0,
             line: 1,
+
+            reserved_keywords: HashMap::from([
+                ("and", TokenType::And),
+                ("class", TokenType::Class),
+                ("else", TokenType::Else),
+                ("false", TokenType::False),
+                ("for", TokenType::For),
+                ("fun", TokenType::Fun),
+                ("if", TokenType::If),
+                ("nil", TokenType::Nil),
+                ("or", TokenType::Or),
+                ("print", TokenType::Print),
+                ("return", TokenType::Return),
+                ("super", TokenType::Super),
+                ("this", TokenType::This),
+                ("true", TokenType::True),
+                ("var", TokenType::Var),
+                ("while", TokenType::While),
+            ]),
         }
     }
 
@@ -114,6 +135,9 @@ impl<'source> Scanner<'source> {
 
             // Numbers
             b'0'..=b'9' => self.number(),
+
+            // Keywords or identifiers
+            b'_' | b'a'..=b'z' | b'A'..=b'Z' => self.keyword_or_identifier(),
 
             e => Err(ScanError::UnexpectedCharacter(e)),
         }
@@ -252,5 +276,24 @@ impl<'source> Scanner<'source> {
 
             self.advance();
         }
+    }
+
+    fn keyword_or_identifier(&mut self) -> Result<(), ScanError> {
+        while let Some(ch) = self.peek() {
+            if !((ch >= b'0' && ch <= b'9') || ch.is_ascii_alphabetic()) {
+                break;
+            }
+
+            self.advance();
+        }
+
+        let text = from_utf8(&self.source[self.start..self.current]).unwrap();
+        let token_type = *self
+            .reserved_keywords
+            .get(text)
+            .unwrap_or(&TokenType::Identifier);
+
+        let next_token = self.create_token_object(token_type, None);
+        Ok(self.tokens.push(next_token))
     }
 }

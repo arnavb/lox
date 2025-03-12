@@ -3,7 +3,7 @@ use std::{
     str::from_utf8,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TokenType {
     LeftParen,
     RightParen,
