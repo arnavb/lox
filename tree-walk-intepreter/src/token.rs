@@ -44,8 +44,6 @@ pub enum TokenType {
     Var,
     While,
     Eof,
-
-    // TODO: Added for simplicity for now
     SingleLineComment,
 }
 

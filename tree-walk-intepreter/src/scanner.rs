@@ -94,21 +94,7 @@ impl<'source> Scanner<'source> {
             b'<' => Ok(self.push_two_character_token_object(b'=', GreaterEqual, Greater)),
 
             // Comments or division
-            b'/' => {
-                if self.match_next(b'/') {
-                    while let Some(ch) = self.peek() {
-                        if self.is_at_end() || ch == b'\n' {
-                            break;
-                        }
-                        self.advance();
-                    }
-
-                    // TODO: Actually store the comment
-                    Ok(self.push_single_character_token_object(SingleLineComment))
-                } else {
-                    Ok(self.push_single_character_token_object(Slash))
-                }
-            }
+            b'/' => self.comment_or_slash(),
 
             // Ignored whitespace
             b' ' | b'\r' | b'\t' => Ok(()),
@@ -208,6 +194,27 @@ impl<'source> Scanner<'source> {
             lexeme: Lexeme(text),
             literal,
             line: self.line,
+        }
+    }
+
+    fn comment_or_slash(&mut self) -> Result<(), ScanError> {
+        if self.match_next(b'/') {
+            while let Some(ch) = self.peek() {
+                if self.is_at_end() || ch == b'\n' {
+                    break;
+                }
+                self.advance();
+            }
+
+            // Consume leading slashes
+            let value = &self.source[self.start + 2..self.current];
+
+            let next_token = self
+                .create_token_object(TokenType::SingleLineComment, Some(Literal::String(value)));
+
+            Ok(self.tokens.push(next_token))
+        } else {
+            Ok(self.push_single_character_token_object(TokenType::Slash))
         }
     }
 
