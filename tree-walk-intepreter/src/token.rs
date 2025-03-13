@@ -68,10 +68,23 @@ impl Display for Literal<'_> {
     }
 }
 
+pub struct Lexeme<'source>(pub &'source [u8]);
+
+// Helper so lexemes are visible as strings
+impl fmt::Debug for Lexeme<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            from_utf8(self.0).expect("Invalid UTF-8 when formatting lexeme")
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct Token<'source> {
     pub token_type: TokenType,
-    pub lexeme: &'source [u8],
+    pub lexeme: Lexeme<'source>,
     pub literal: Option<Literal<'source>>,
     pub line: usize,
 }

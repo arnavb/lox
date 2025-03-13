@@ -1,6 +1,6 @@
 use std::{collections::HashMap, str::from_utf8};
 
-use crate::token::{Literal, Token, TokenType};
+use crate::token::{Lexeme, Literal, Token, TokenType};
 
 pub enum ScanError {
     UnexpectedCharacter(u8),
@@ -62,7 +62,7 @@ impl<'source> Scanner<'source> {
 
         self.tokens.push(Token {
             token_type: TokenType::Eof,
-            lexeme: b"",
+            lexeme: Lexeme(b""),
             literal: None,
             line: self.line,
         });
@@ -205,7 +205,7 @@ impl<'source> Scanner<'source> {
 
         Token {
             token_type,
-            lexeme: text,
+            lexeme: Lexeme(text),
             literal,
             line: self.line,
         }
