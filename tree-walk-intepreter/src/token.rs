@@ -49,19 +49,18 @@ pub enum TokenType {
     SingleLineComment,
 }
 
-#[derive(Debug)]
 pub enum Literal<'source> {
     Number(f64),
     String(&'source [u8]),
 }
 
-impl Display for Literal<'_> {
+impl fmt::Debug for Literal<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Number(num) => write!(f, "{}", num),
             Self::String(string) => write!(
                 f,
-                "{}",
+                "\"{}\"",
                 from_utf8(string).expect("Invalid UTF-8 when formatting literal")
             ),
         }
