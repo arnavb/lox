@@ -48,6 +48,7 @@ pub enum TokenType {
     MultiLineComment,
 }
 
+#[derive(PartialEq)]
 pub enum Literal<'source> {
     Number(f64),
     String(&'source [u8]),
@@ -66,6 +67,7 @@ impl fmt::Debug for Literal<'_> {
     }
 }
 
+#[derive(PartialEq)]
 pub struct Lexeme<'source>(pub &'source [u8]);
 
 // Helper so lexemes are visible as strings

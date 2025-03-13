@@ -14,7 +14,6 @@ pub struct Scanner<'source> {
     start: usize,
     current: usize,
     line: usize,
-
     reserved_keywords: HashMap<&'static str, TokenType>,
 }
 
@@ -327,5 +326,100 @@ impl<'source> Scanner<'source> {
 
             Ok(self.tokens.push(next_token))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic_multiline_comment() {
+        let source_string = "/* comment */";
+
+        let mut scanner = Scanner::new(&source_string);
+
+        scanner.scan_tokens();
+
+        let comment_token = &scanner.tokens[0];
+
+        matches!(comment_token.token_type, TokenType::MultiLineComment);
+
+        assert_eq!(comment_token.lexeme, Lexeme(source_string.as_bytes()));
+
+        assert_eq!(
+            comment_token.literal.as_ref().unwrap(),
+            &Literal::String(b" comment ")
+        );
+    }
+
+    #[test]
+    fn nested_valid_mutliline_comments() {
+        let source_string = "/* comment /* another */ /* deeper */ */";
+
+        let mut scanner = Scanner::new(&source_string);
+
+        let errors = scanner.scan_tokens();
+
+        assert!(errors.is_empty());
+
+        let comment_token = &scanner.tokens[0];
+
+        matches!(comment_token.token_type, TokenType::MultiLineComment);
+
+        assert_eq!(comment_token.lexeme, Lexeme(source_string.as_bytes()));
+
+        assert_eq!(
+            comment_token.literal.as_ref().unwrap(),
+            &Literal::String(b" comment /* another */ /* deeper */ ")
+        );
+    }
+
+    #[test]
+    fn unterminated_simple_multiline_comment() {
+        let source_string = "/* comment ";
+
+        let mut scanner = Scanner::new(&source_string);
+
+        let errors = scanner.scan_tokens();
+
+        assert!(!errors.is_empty());
+
+        matches!(errors[0], ScanError::UnterminatedMultiLineComment);
+    }
+
+    #[test]
+    fn unterminated_nested_multiline_comment() {
+        let source_string = "/* comment /* /* /* */";
+
+        let mut scanner = Scanner::new(&source_string);
+
+        let errors = scanner.scan_tokens();
+
+        assert!(!errors.is_empty());
+
+        matches!(errors[0], ScanError::UnterminatedMultiLineComment);
+    }
+
+    #[test]
+    fn advanced_multiline_nested_comment() {
+        let source_string = "/* /* */ /* /* */ */ */";
+
+        let mut scanner = Scanner::new(&source_string);
+
+        let errors = scanner.scan_tokens();
+
+        assert!(errors.is_empty());
+
+        let comment_token = &scanner.tokens[0];
+
+        matches!(comment_token.token_type, TokenType::MultiLineComment);
+
+        assert_eq!(comment_token.lexeme, Lexeme(source_string.as_bytes()));
+
+        assert_eq!(
+            comment_token.literal.as_ref().unwrap(),
+            &Literal::String(b" /* */ /* /* */ */ ")
+        );
     }
 }
