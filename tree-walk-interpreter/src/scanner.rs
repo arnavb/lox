@@ -291,8 +291,7 @@ impl<'source> Scanner<'source> {
             .get(text)
             .unwrap_or(&TokenType::Identifier);
 
-        let next_token = self.create_token_object(token_type, None);
-        Ok(self.tokens.push(next_token))
+        Ok(self.push_single_character_token_object(token_type))
     }
 
     fn multiline_comment_context(&mut self) -> Result<(), ScanError> {
