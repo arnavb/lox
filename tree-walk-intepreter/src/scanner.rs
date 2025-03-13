@@ -19,6 +19,8 @@ pub struct Scanner<'source> {
 
 impl<'source> Scanner<'source> {
     pub fn new(source: &'source str) -> Self {
+        use TokenType::*;
+
         Self {
             source: source.as_bytes(),
             tokens: Vec::new(),
@@ -27,22 +29,22 @@ impl<'source> Scanner<'source> {
             line: 1,
 
             reserved_keywords: HashMap::from([
-                ("and", TokenType::And),
-                ("class", TokenType::Class),
-                ("else", TokenType::Else),
-                ("false", TokenType::False),
-                ("for", TokenType::For),
-                ("fun", TokenType::Fun),
-                ("if", TokenType::If),
-                ("nil", TokenType::Nil),
-                ("or", TokenType::Or),
-                ("print", TokenType::Print),
-                ("return", TokenType::Return),
-                ("super", TokenType::Super),
-                ("this", TokenType::This),
-                ("true", TokenType::True),
-                ("var", TokenType::Var),
-                ("while", TokenType::While),
+                ("and", And),
+                ("class", Class),
+                ("else", Else),
+                ("false", False),
+                ("for", For),
+                ("fun", Fun),
+                ("if", If),
+                ("nil", Nil),
+                ("or", Or),
+                ("print", Print),
+                ("return", Return),
+                ("super", Super),
+                ("this", This),
+                ("true", True),
+                ("var", Var),
+                ("while", While),
             ]),
         }
     }
@@ -69,41 +71,27 @@ impl<'source> Scanner<'source> {
     }
 
     fn scan_next_token(&mut self) -> Result<(), ScanError> {
+        use TokenType::*;
+
         let next_character = self.advance();
 
         match next_character {
-            b'(' => Ok(self.push_single_character_token_object(TokenType::LeftParen)),
-            b')' => Ok(self.push_single_character_token_object(TokenType::RightParen)),
-            b'{' => Ok(self.push_single_character_token_object(TokenType::LeftBrace)),
-            b'}' => Ok(self.push_single_character_token_object(TokenType::RightBrace)),
-            b',' => Ok(self.push_single_character_token_object(TokenType::Comma)),
-            b'.' => Ok(self.push_single_character_token_object(TokenType::Dot)),
-            b'-' => Ok(self.push_single_character_token_object(TokenType::Minus)),
-            b'+' => Ok(self.push_single_character_token_object(TokenType::Plus)),
-            b';' => Ok(self.push_single_character_token_object(TokenType::Semicolon)),
-            b'*' => Ok(self.push_single_character_token_object(TokenType::Star)),
+            b'(' => Ok(self.push_single_character_token_object(LeftParen)),
+            b')' => Ok(self.push_single_character_token_object(RightParen)),
+            b'{' => Ok(self.push_single_character_token_object(LeftBrace)),
+            b'}' => Ok(self.push_single_character_token_object(RightBrace)),
+            b',' => Ok(self.push_single_character_token_object(Comma)),
+            b'.' => Ok(self.push_single_character_token_object(Dot)),
+            b'-' => Ok(self.push_single_character_token_object(Minus)),
+            b'+' => Ok(self.push_single_character_token_object(Plus)),
+            b';' => Ok(self.push_single_character_token_object(Semicolon)),
+            b'*' => Ok(self.push_single_character_token_object(Star)),
 
             // Two character lexeme
-            b'!' => Ok(self.push_two_character_token_object(
-                b'=',
-                TokenType::BangEqual,
-                TokenType::Bang,
-            )),
-            b'=' => Ok(self.push_two_character_token_object(
-                b'=',
-                TokenType::EqualEqual,
-                TokenType::Equal,
-            )),
-            b'>' => Ok(self.push_two_character_token_object(
-                b'=',
-                TokenType::LessEqual,
-                TokenType::Less,
-            )),
-            b'<' => Ok(self.push_two_character_token_object(
-                b'=',
-                TokenType::GreaterEqual,
-                TokenType::Greater,
-            )),
+            b'!' => Ok(self.push_two_character_token_object(b'=', BangEqual, Bang)),
+            b'=' => Ok(self.push_two_character_token_object(b'=', EqualEqual, Equal)),
+            b'>' => Ok(self.push_two_character_token_object(b'=', LessEqual, Less)),
+            b'<' => Ok(self.push_two_character_token_object(b'=', GreaterEqual, Greater)),
 
             // Comments or division
             b'/' => {
@@ -116,9 +104,9 @@ impl<'source> Scanner<'source> {
                     }
 
                     // TODO: Actually store the comment
-                    Ok(self.push_single_character_token_object(TokenType::SingleLineComment))
+                    Ok(self.push_single_character_token_object(SingleLineComment))
                 } else {
-                    Ok(self.push_single_character_token_object(TokenType::Slash))
+                    Ok(self.push_single_character_token_object(Slash))
                 }
             }
 
