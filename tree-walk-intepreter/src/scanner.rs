@@ -258,7 +258,7 @@ impl<'source> Scanner<'source> {
             }
         }
 
-        let value = &self.source[self.start + 1..self.current - 1];
+        let value = &self.source[self.start..self.current];
 
         // Ugly but we're fairly certain these bytes represent a valid number
         let parsed_f64 = from_utf8(value).unwrap().parse::<f64>().unwrap();
