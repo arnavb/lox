@@ -4,6 +4,8 @@ use std::{
     process::ExitCode,
 };
 
+use scanner::Scanner;
+
 mod errors;
 mod scanner;
 mod token;
@@ -36,13 +38,6 @@ fn run_file(filename: &str) -> ExitCode {
 fn run_prompt() -> ExitCode {
     println!("rlox v0.0.1");
     loop {
-        let test_token = token::Token {
-            token_type: token::TokenType::Identifier,
-            lexeme: b"abceefg",
-            literal: None,
-            line: 54,
-        };
-        println!("{:?}", test_token);
         print!("> ");
 
         if let Err(_) = io::stdout().flush() {
@@ -61,6 +56,18 @@ fn run_prompt() -> ExitCode {
 
         if trimmed_input.is_empty() {
             break;
+        }
+
+        let mut scanner = Scanner::new(trimmed_input);
+
+        let errors = scanner.scan_tokens();
+
+        if !errors.is_empty() {
+            println!("Found {} errors while scanning", errors.len());
+        }
+
+        for token in scanner.tokens {
+            println!("{:?}", token);
         }
     }
 

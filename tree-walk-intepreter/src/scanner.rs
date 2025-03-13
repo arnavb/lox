@@ -9,7 +9,7 @@ pub enum ScanError {
 
 pub struct Scanner<'source> {
     source: &'source [u8],
-    tokens: Vec<Token<'source>>,
+    pub tokens: Vec<Token<'source>>,
     start: usize,
     current: usize,
     line: usize,
