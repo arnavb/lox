@@ -215,35 +215,8 @@ impl<'source> Scanner<'source> {
 
             Ok(self.tokens.push(next_token))
         } else if self.match_next(b'*') {
-            while let Some(ch) = self.peek() {
-                if self.is_at_end() {
-                    break;
-                }
-
-                // Found terminating comment characters
-                if ch == b'*' && self.peek_next() == Some(b'/') {
-                    break;
-                }
-
-                self.advance();
-            }
-
-            if self.is_at_end() || self.current == self.source.len() - 1 {
-                // Unterminated multiline comment (missing either 1 or both terminating
-                // characters
-                Err(ScanError::UnterminatedMultiLineComment)
-            } else {
-                // To consume -----v
-                self.advance(); // *
-                self.advance(); // /
-
-                let value = &self.source[self.start + 2..self.current - 2];
-
-                let next_token = self
-                    .create_token_object(TokenType::MultiLineComment, Some(Literal::String(value)));
-
-                Ok(self.tokens.push(next_token))
-            }
+            // Found outermost multiline comment
+            self.multiline_comment_context()
         } else {
             Ok(self.push_single_character_token_object(TokenType::Slash))
         }
@@ -321,5 +294,38 @@ impl<'source> Scanner<'source> {
 
         let next_token = self.create_token_object(token_type, None);
         Ok(self.tokens.push(next_token))
+    }
+
+    fn multiline_comment_context(&mut self) -> Result<(), ScanError> {
+        // We start after consuming the /* in self.comment_or_slash, so level is set to 1, not 0
+        let mut current_level = 1;
+
+        while let Some(ch) = self.peek() {
+            if ch == b'/' && self.peek_next() == Some(b'*') {
+                current_level += 1;
+                self.advance();
+                self.advance();
+                continue;
+            } else if ch == b'*' && self.peek_next() == Some(b'/') {
+                current_level -= 1;
+                self.advance();
+                self.advance();
+                continue;
+            }
+
+            self.advance();
+        }
+
+        if current_level > 0 {
+            // One of the comments was unterminated
+            Err(ScanError::UnterminatedMultiLineComment)
+        } else {
+            let text = &self.source[self.start + 2..self.current - 2];
+
+            let next_token =
+                self.create_token_object(TokenType::MultiLineComment, Some(Literal::String(text)));
+
+            Ok(self.tokens.push(next_token))
+        }
     }
 }
