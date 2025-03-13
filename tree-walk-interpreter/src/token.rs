@@ -45,6 +45,7 @@ pub enum TokenType {
     While,
     Eof,
     SingleLineComment,
+    MultiLineComment,
 }
 
 pub enum Literal<'source> {

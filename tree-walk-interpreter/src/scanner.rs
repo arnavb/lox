@@ -5,6 +5,7 @@ use crate::token::{Lexeme, Literal, Token, TokenType};
 pub enum ScanError {
     UnexpectedCharacter(u8),
     UnterminatedString,
+    UnterminatedMultiLineComment,
 }
 
 pub struct Scanner<'source> {
@@ -213,6 +214,36 @@ impl<'source> Scanner<'source> {
                 .create_token_object(TokenType::SingleLineComment, Some(Literal::String(value)));
 
             Ok(self.tokens.push(next_token))
+        } else if self.match_next(b'*') {
+            while let Some(ch) = self.peek() {
+                if self.is_at_end() {
+                    break;
+                }
+
+                // Found terminating comment characters
+                if ch == b'*' && self.peek_next() == Some(b'/') {
+                    break;
+                }
+
+                self.advance();
+            }
+
+            if self.is_at_end() || self.current == self.source.len() - 1 {
+                // Unterminated multiline comment (missing either 1 or both terminating
+                // characters
+                Err(ScanError::UnterminatedMultiLineComment)
+            } else {
+                // To consume -----v
+                self.advance(); // *
+                self.advance(); // /
+
+                let value = &self.source[self.start + 2..self.current - 2];
+
+                let next_token = self
+                    .create_token_object(TokenType::MultiLineComment, Some(Literal::String(value)));
+
+                Ok(self.tokens.push(next_token))
+            }
         } else {
             Ok(self.push_single_character_token_object(TokenType::Slash))
         }
