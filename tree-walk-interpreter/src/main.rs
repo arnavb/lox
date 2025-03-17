@@ -58,15 +58,15 @@ fn run_prompt() -> ExitCode {
             break;
         }
 
-        let mut scanner = Scanner::new(trimmed_input);
+        let scanner = Scanner::new(trimmed_input);
 
-        let errors = scanner.scan_tokens();
+        let (tokens, errors) = scanner.scan_tokens();
 
         if !errors.is_empty() {
             println!("Found {} errors while scanning", errors.len());
         }
 
-        for token in scanner.tokens {
+        for token in tokens {
             println!("{:?}", token);
         }
     }

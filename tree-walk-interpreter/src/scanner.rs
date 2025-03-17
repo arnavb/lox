@@ -49,7 +49,7 @@ impl<'source> Scanner<'source> {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Vec<ScanError> {
+    pub fn scan_tokens(mut self) -> (Vec<Token<'source>>, Vec<ScanError>) {
         let mut scan_errors = Vec::new();
 
         while !self.is_at_end() {
@@ -67,7 +67,7 @@ impl<'source> Scanner<'source> {
             line: self.line,
         });
 
-        scan_errors
+        (self.tokens, scan_errors)
     }
 
     fn scan_next_token(&mut self) -> Result<(), ScanError> {
@@ -291,7 +291,8 @@ impl<'source> Scanner<'source> {
             .get(text)
             .unwrap_or(&TokenType::Identifier);
 
-        Ok(self.push_single_character_token_object(token_type))
+        let next_token = self.create_token_object(token_type, None);
+        Ok(self.tokens.push(next_token))
     }
 
     fn multiline_comment_context(&mut self) -> Result<(), ScanError> {
@@ -336,11 +337,11 @@ mod tests {
     fn basic_multiline_comment() {
         let source_string = "/* comment */";
 
-        let mut scanner = Scanner::new(&source_string);
+        let scanner = Scanner::new(&source_string);
 
-        scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
 
-        let comment_token = &scanner.tokens[0];
+        let comment_token = &tokens[0];
 
         matches!(comment_token.token_type, TokenType::MultiLineComment);
 
@@ -356,13 +357,13 @@ mod tests {
     fn nested_valid_mutliline_comments() {
         let source_string = "/* comment /* another */ /* deeper */ */";
 
-        let mut scanner = Scanner::new(&source_string);
+        let scanner = Scanner::new(&source_string);
 
-        let errors = scanner.scan_tokens();
+        let (tokens, errors) = scanner.scan_tokens();
 
         assert!(errors.is_empty());
 
-        let comment_token = &scanner.tokens[0];
+        let comment_token = &tokens[0];
 
         matches!(comment_token.token_type, TokenType::MultiLineComment);
 
@@ -378,9 +379,9 @@ mod tests {
     fn unterminated_simple_multiline_comment() {
         let source_string = "/* comment ";
 
-        let mut scanner = Scanner::new(&source_string);
+        let scanner = Scanner::new(&source_string);
 
-        let errors = scanner.scan_tokens();
+        let (_, errors) = scanner.scan_tokens();
 
         assert!(!errors.is_empty());
 
@@ -391,9 +392,9 @@ mod tests {
     fn unterminated_nested_multiline_comment() {
         let source_string = "/* comment /* /* /* */";
 
-        let mut scanner = Scanner::new(&source_string);
+        let scanner = Scanner::new(&source_string);
 
-        let errors = scanner.scan_tokens();
+        let (_, errors) = scanner.scan_tokens();
 
         assert!(!errors.is_empty());
 
@@ -404,13 +405,13 @@ mod tests {
     fn advanced_multiline_nested_comment() {
         let source_string = "/* /* */ /* /* */ */ */";
 
-        let mut scanner = Scanner::new(&source_string);
+        let scanner = Scanner::new(&source_string);
 
-        let errors = scanner.scan_tokens();
+        let (tokens, errors) = scanner.scan_tokens();
 
         assert!(errors.is_empty());
 
-        let comment_token = &scanner.tokens[0];
+        let comment_token = &tokens[0];
 
         matches!(comment_token.token_type, TokenType::MultiLineComment);
 
